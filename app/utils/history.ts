@@ -2,28 +2,63 @@ import boxen from "boxen";
 import chalk from "chalk";
 import { format } from "date-fns";
 import { createCliTable } from "./cli-table";
+import { historyStore } from "./history-store";
 
 export function storeHistory<T extends unknown[], R>(
-  callback: (...args: T) => R
+  callback: (...args: T) => R,
+  maxHistorySize: number = 100
 ) {
   const history = new Map();
   let count = 0;
 
   return function (...args: T) {
     const date = new Date().toISOString();
+    const startTime = performance.now();
+    const currentCount = count++;
+
     try {
       const result = callback(...args);
-      history.set(count, { args, result, date, error: null });
+      const duration = Math.round(performance.now() - startTime);
+
+      const entry = { args, result, date, error: null };
+      history.set(currentCount, entry);
+
+      historyStore.addEntry({
+        count: currentCount,
+        args,
+        result,
+        error: null,
+        date,
+        functionName: callback.name || "anonymous",
+        duration,
+      });
 
       return result;
     } catch (error) {
+      const duration = Math.round(performance.now() - startTime);
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      history.set(count, { args, result: null, date, error: errorMessage });
+
+      const entry = { args, result: null, date, error: errorMessage };
+      history.set(currentCount, entry);
+
+      historyStore.addEntry({
+        count: currentCount,
+        args,
+        result: null,
+        error: errorMessage,
+        date,
+        functionName: callback.name || "anonymous",
+        duration,
+      });
 
       return error;
     } finally {
-      count++;
+      if (history.size >= maxHistorySize) {
+        const oldestKey = Math.min(...Array.from(history.keys()));
+        history.delete(oldestKey);
+      }
+
       createTable(history);
     }
   };
