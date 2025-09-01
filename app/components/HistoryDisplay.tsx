@@ -3,19 +3,21 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import {
-  historyStore,
-  type HistoryEntry,
+  historyRegistry,
+  type FunctionHistory,
   type CallEntry,
 } from "../utils/history-store";
 
 export default function HistoryDisplay() {
-  const [entries, setEntries] = useState<HistoryEntry[]>([]);
+  const [functionHistories, setFunctionHistories] = useState<FunctionHistory[]>(
+    []
+  );
   const [expandedFunctions, setExpandedFunctions] = useState<Set<string>>(
     new Set()
   );
 
   useEffect(() => {
-    const unsubscribe = historyStore.subscribe(setEntries);
+    const unsubscribe = historyRegistry.subscribe(setFunctionHistories);
     return unsubscribe;
   }, []);
 
@@ -53,11 +55,11 @@ export default function HistoryDisplay() {
             Function Call History
           </h2>
           <span className="notion-text-secondary text-sm">
-            {entries.length} functions
+            {functionHistories.length} functions
           </span>
         </div>
         <button
-          onClick={() => historyStore.clear()}
+          onClick={() => historyRegistry.clear()}
           className="cursor-pointer px-3 py-1.5 text-sm notion-text-secondary hover:notion-text transition-colors duration-150 border notion-border rounded-sm hover:bg-opacity-50"
           style={{
             borderColor: "var(--border-color)",
@@ -74,7 +76,7 @@ export default function HistoryDisplay() {
       </div>
 
       <div className="notion-table">
-        {entries.length === 0 ? (
+        {functionHistories.length === 0 ? (
           <div
             className="text-center py-12"
             style={{ background: "var(--background)" }}
@@ -122,7 +124,7 @@ export default function HistoryDisplay() {
               </div>
             </div>
 
-            {entries.map((functionEntry) => {
+            {functionHistories.map((functionEntry) => {
               const totalCalls = functionEntry.calls.length;
               const successRate =
                 totalCalls > 0

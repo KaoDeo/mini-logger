@@ -1,15 +1,28 @@
 import { v4 as uuidv4 } from "uuid";
-import { historyStore, type CallEntry } from "./history-store";
+import {
+  historyRegistry,
+  type CallEntry,
+  type FunctionHistory,
+} from "./history-store";
 
 export function storeHistory<T extends unknown[], R>(
   callback: (...args: T) => R
 ) {
+  const functionName = callback.name || "anonymous";
   let count = 0;
+
+  const functionHistory: FunctionHistory = {
+    errors: 0,
+    successful: 0,
+    functionName,
+    calls: [],
+  };
+
+  historyRegistry.register(functionHistory);
 
   return function (...args: T) {
     const date = new Date();
     const id = uuidv4();
-    const functionName = callback.name || "anonymous";
 
     try {
       const result = callback(...args);
@@ -23,8 +36,11 @@ export function storeHistory<T extends unknown[], R>(
         error: null,
       };
 
-      historyStore.add(callEntry, functionName);
+      functionHistory.calls.push(callEntry);
+      functionHistory.successful++;
       count++;
+
+      historyRegistry.notifyChange();
 
       return result;
     } catch (error) {
@@ -40,8 +56,11 @@ export function storeHistory<T extends unknown[], R>(
         error: errorMessage,
       };
 
-      historyStore.add(callEntry, functionName);
+      functionHistory.calls.push(callEntry);
+      functionHistory.errors++;
       count++;
+
+      historyRegistry.notifyChange();
 
       return undefined;
     }

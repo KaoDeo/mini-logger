@@ -7,63 +7,54 @@ export type CallEntry = {
   error: string | null;
 };
 
-export type HistoryEntry = {
+export type FunctionHistory = {
   errors: number;
   successful: number;
   functionName: string;
   calls: CallEntry[];
 };
 
-function createHistoryStore() {
-  let history: HistoryEntry[] = [];
-  let listeners: Array<(entries: HistoryEntry[]) => void> = [];
+function createHistoryRegistry() {
+  const functionHistories: FunctionHistory[] = [];
+  let listeners: Array<(histories: FunctionHistory[]) => void> = [];
 
   const notifyListeners = () => {
-    listeners.forEach((listener) => listener([...history]));
+    listeners.forEach((listener) => listener([...functionHistories]));
   };
 
   return {
-    get: () => [...history],
-
-    add: (callEntry: CallEntry, functionName: string) => {
-      const existingFunction = history.find(
-        (h) => h.functionName === functionName
+    register: (history: FunctionHistory) => {
+      const existing = functionHistories.find(
+        (h) => h.functionName === history.functionName
       );
-
-      if (existingFunction) {
-        existingFunction.calls.push(callEntry);
-        if (callEntry.error) {
-          existingFunction.errors++;
-        } else {
-          existingFunction.successful++;
-        }
-      } else {
-        const newHistoryEntry: HistoryEntry = {
-          functionName,
-          errors: callEntry.error ? 1 : 0,
-          successful: callEntry.error ? 0 : 1,
-          calls: [callEntry],
-        };
-        history.push(newHistoryEntry);
+      if (!existing) {
+        functionHistories.push(history);
       }
-
-      notifyListeners();
     },
+
+    getAllHistories: () => [...functionHistories],
 
     clear: () => {
-      history = [];
+      functionHistories.forEach((h) => {
+        h.errors = 0;
+        h.successful = 0;
+        h.calls = [];
+      });
       notifyListeners();
     },
 
-    subscribe: (listener: (entries: HistoryEntry[]) => void) => {
+    subscribe: (listener: (histories: FunctionHistory[]) => void) => {
       listeners.push(listener);
-      listener([...history]);
-
+      listener([...functionHistories]);
       return () => {
         listeners = listeners.filter((l) => l !== listener);
       };
     },
+
+    notifyChange: () => {
+      notifyListeners();
+    },
   };
 }
 
-export const historyStore = createHistoryStore();
+export const historyRegistry = createHistoryRegistry();
