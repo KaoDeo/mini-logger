@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { historyStore, type HistoryEntry } from "@/app/utils/history-store";
 import { format } from "date-fns";
+import { historyStore, type HistoryEntry } from "../utils/history-store";
 
 export default function HistoryDisplay() {
   const [entries, setEntries] = useState<HistoryEntry[]>([]);

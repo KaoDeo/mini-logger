@@ -1,52 +1,43 @@
-import { v4 as uuidv4 } from "uuid";
-
-interface HistoryEntry {
-  id?: string;
+export type HistoryEntry = {
+  id: string;
   count: number;
+  functionName: string;
   args: unknown[];
   result: unknown;
+  date: Date;
   error: string | null;
-  date: string;
-  functionName: string;
-  duration?: number;
+};
+
+function createHistoryStore() {
+  let history: HistoryEntry[] = [];
+  let listeners: Array<(entries: HistoryEntry[]) => void> = [];
+
+  const notifyListeners = () => {
+    listeners.forEach((listener) => listener([...history]));
+  };
+
+  return {
+    get: () => [...history],
+
+    add: (entry: HistoryEntry) => {
+      history.push(entry);
+      notifyListeners();
+    },
+
+    clear: () => {
+      history = [];
+      notifyListeners();
+    },
+
+    subscribe: (listener: (entries: HistoryEntry[]) => void) => {
+      listeners.push(listener);
+      listener([...history]);
+
+      return () => {
+        listeners = listeners.filter((l) => l !== listener);
+      };
+    },
+  };
 }
 
-class HistoryStore {
-  private entries: HistoryEntry[] = [];
-  private listeners: Set<(entries: HistoryEntry[]) => void> = new Set();
-
-  addEntry(entry: HistoryEntry) {
-    this.entries.push({ ...entry, id: uuidv4() });
-
-    if (this.entries.length > 50) {
-      this.entries = this.entries.slice(-50);
-    }
-    this.notifyListeners();
-  }
-
-  subscribe(listener: (entries: HistoryEntry[]) => void) {
-    this.listeners.add(listener);
-
-    listener(this.entries);
-
-    return () => {
-      this.listeners.delete(listener);
-    };
-  }
-
-  private notifyListeners() {
-    this.listeners.forEach((listener) => listener([...this.entries]));
-  }
-
-  clear() {
-    this.entries = [];
-    this.notifyListeners();
-  }
-
-  getEntries(): HistoryEntry[] {
-    return [...this.entries];
-  }
-}
-
-export const historyStore = new HistoryStore();
-export type { HistoryEntry };
+export const historyStore = createHistoryStore();

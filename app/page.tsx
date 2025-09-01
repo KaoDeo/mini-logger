@@ -1,34 +1,39 @@
 "use client";
 
-import { useEffect } from "react";
 import HistoryDisplay from "@/app/components/HistoryDisplay";
-import { storeHistory } from "@/app/utils";
+import {
+  add,
+  calculateDistance,
+  daysBetween,
+  divide,
+  fibonacci,
+  isPrime,
+  multiply,
+  storeHistory,
+  validateEmail,
+} from "@/app/utils";
+import { useEffect } from "react";
 
 export default function Home() {
-  const add = storeHistory(function add(a: number, b: number) {
-    return a + b;
-  });
-
-  const multiply = storeHistory(function multiply(x: number, y: number) {
-    return x * y;
-  });
-
-  const divide = storeHistory(function divide(a: number, b: number) {
-    if (b === 0) throw new Error("Division by zero!");
-    return a / b;
-  });
-
-  const fibonacci = storeHistory(function fibonacci(n: number): number {
-    if (n <= 1) return n;
-    return fibonacci(n - 1) + fibonacci(n - 2);
-  });
-
   useEffect(() => {
     add(5, 3);
+    add(4, 3);
+    add(3, 3);
+
+    multiply(2, 7);
+    multiply(3, 7);
     multiply(4, 7);
+
     divide(10, 0);
-    fibonacci(5);
-  }, [add, multiply, divide, fibonacci]);
+    divide(9, 0);
+    divide(8, 0);
+
+    // fibonacci(5);
+    // validateEmail("test@example.com");
+    // isPrime(17);
+    // calculateDistance({ x: 1, y: 2 }, { x: 3, y: 4 });
+    // daysBetween("2024-01-01", "2024-01-02");
+  }, []);
 
   return (
     <div className="min-h-screen" style={{ background: "var(--background)" }}>
