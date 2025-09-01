@@ -21,6 +21,7 @@ export const fibonacci = storeHistory(function fibonacci(n: number): number {
 export const validateEmail = storeHistory(function validateEmail(
   email: string
 ) {
+  if (!email) throw new Error("Email is required!");
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
 });
@@ -47,6 +48,7 @@ export const calculateDistance = storeHistory(function calculateDistance(
   point1: { x: number; y: number },
   point2: { x: number; y: number }
 ) {
+  if (!point1 || !point2) throw new Error("Points are required!");
   const dx = point2.x - point1.x;
   const dy = point2.y - point1.y;
   return Math.sqrt(dx * dx + dy * dy);
@@ -56,6 +58,7 @@ export const daysBetween = storeHistory(function daysBetween(
   date1: string,
   date2: string
 ) {
+  if (!date1 || !date2) throw new Error("Dates are required!");
   const d1 = new Date(date1);
   const d2 = new Date(date2);
   const diffTime = Math.abs(d2.getTime() - d1.getTime());

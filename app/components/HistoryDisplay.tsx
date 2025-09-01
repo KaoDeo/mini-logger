@@ -2,27 +2,46 @@
 
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
-import { historyStore, type HistoryEntry } from "../utils/history-store";
+import {
+  historyStore,
+  type HistoryEntry,
+  type CallEntry,
+} from "../utils/history-store";
 
 export default function HistoryDisplay() {
   const [entries, setEntries] = useState<HistoryEntry[]>([]);
+  const [expandedFunctions, setExpandedFunctions] = useState<Set<string>>(
+    new Set()
+  );
 
   useEffect(() => {
     const unsubscribe = historyStore.subscribe(setEntries);
     return unsubscribe;
   }, []);
 
-  const formatResult = (entry: HistoryEntry) => {
-    if (entry.error) {
-      return { text: entry.error, type: "error" as const };
+  const toggleFunction = (functionName: string) => {
+    setExpandedFunctions((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(functionName)) {
+        newSet.delete(functionName);
+      } else {
+        newSet.add(functionName);
+      }
+      return newSet;
+    });
+  };
+
+  const formatResult = (call: CallEntry) => {
+    if (call.error) {
+      return { text: call.error, type: "error" as const };
     }
     try {
       return {
-        text: JSON.stringify(entry.result, null, 2),
+        text: JSON.stringify(call.result, null, 2),
         type: "success" as const,
       };
     } catch {
-      return { text: String(entry.result), type: "success" as const };
+      return { text: String(call.result), type: "success" as const };
     }
   };
 
@@ -34,7 +53,7 @@ export default function HistoryDisplay() {
             Function Call History
           </h2>
           <span className="notion-text-secondary text-sm">
-            {entries.length} calls
+            {entries.length} functions
           </span>
         </div>
         <button
@@ -61,7 +80,7 @@ export default function HistoryDisplay() {
             style={{ background: "var(--background)" }}
           >
             <p className="notion-text-secondary text-sm">
-              No function calls yet
+              No functions tracked yet
             </p>
           </div>
         ) : (
@@ -75,102 +94,213 @@ export default function HistoryDisplay() {
               }}
             >
               <div className="grid grid-cols-12 gap-4 items-center">
-                <div className="col-span-2">
+                <div className="col-span-4">
                   <span className="text-xs font-medium notion-text-secondary uppercase tracking-wide">
                     Function
                   </span>
                 </div>
                 <div className="col-span-2">
                   <span className="text-xs font-medium notion-text-secondary uppercase tracking-wide">
-                    Time
+                    Total Calls
                   </span>
                 </div>
-                <div className="col-span-3">
+                <div className="col-span-2">
                   <span className="text-xs font-medium notion-text-secondary uppercase tracking-wide">
-                    Arguments
+                    Successful
                   </span>
                 </div>
-                <div className="col-span-4">
+                <div className="col-span-2">
                   <span className="text-xs font-medium notion-text-secondary uppercase tracking-wide">
-                    Result
+                    Errors
                   </span>
                 </div>
-                <div className="col-span-1">
+                <div className="col-span-2">
                   <span className="text-xs font-medium notion-text-secondary uppercase tracking-wide">
-                    Status
+                    Success Rate
                   </span>
                 </div>
               </div>
             </div>
 
-            {entries.map((entry) => {
-              const result = formatResult(entry);
+            {entries.map((functionEntry) => {
+              const totalCalls = functionEntry.calls.length;
+              const successRate =
+                totalCalls > 0
+                  ? ((functionEntry.successful / totalCalls) * 100).toFixed(1)
+                  : "0.0";
+
               return (
-                <div
-                  key={entry.id}
-                  className="notion-table-row px-4 py-3 transition-colors duration-150"
-                >
-                  <div className="grid grid-cols-12 gap-4 items-start">
-                    <div className="col-span-2">
-                      <div className="font-medium notion-text text-sm">
-                        {entry.functionName}
+                <div key={functionEntry.functionName}>
+                  {/* Function Summary Row */}
+                  <div
+                    className="notion-table-row px-4 py-3 transition-colors duration-150 cursor-pointer"
+                    onClick={() => toggleFunction(functionEntry.functionName)}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "var(--hover-bg)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "transparent";
+                    }}
+                  >
+                    <div className="grid grid-cols-12 gap-4 items-center">
+                      <div className="col-span-4">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm">
+                            {expandedFunctions.has(functionEntry.functionName)
+                              ? "▼"
+                              : "▶"}
+                          </span>
+                          <div className="font-medium notion-text text-sm">
+                            {functionEntry.functionName}
+                          </div>
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="col-span-2">
-                      <div className="text-sm notion-text-secondary">
-                        {format(entry.date, "MMM d, yyyy")}
+                      <div className="col-span-2">
+                        <div className="text-sm notion-text font-medium">
+                          {totalCalls}
+                        </div>
                       </div>
-                      <div className="text-xs notion-text-secondary">
-                        {format(entry.date, "h:mm:ss a")}
-                      </div>
-                    </div>
 
-                    <div className="col-span-3">
-                      <div
-                        className="text-sm font-mono notion-text"
-                        style={{
-                          background: "var(--code-bg)",
-                          padding: "4px 6px",
-                          borderRadius: "3px",
-                          fontSize: "12px",
-                        }}
-                      >
-                        {JSON.stringify(entry.args)}
+                      <div className="col-span-2">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-2 h-2 rounded-full bg-green-500" />
+                          <span className="text-sm notion-text">
+                            {functionEntry.successful}
+                          </span>
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="col-span-4">
-                      <div
-                        className="text-sm font-mono max-h-20 overflow-y-auto"
-                        style={{
-                          background:
-                            result.type === "error"
-                              ? "var(--error-bg)"
-                              : "var(--code-bg)",
-                          padding: "4px 6px",
-                          borderRadius: "3px",
-                          fontSize: "12px",
-                          color:
-                            result.type === "error"
-                              ? "var(--error-text)"
-                              : "var(--foreground)",
-                        }}
-                      >
-                        <pre className="whitespace-pre-wrap">{result.text}</pre>
+                      <div className="col-span-2">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-2 h-2 rounded-full bg-red-500" />
+                          <span className="text-sm notion-text">
+                            {functionEntry.errors}
+                          </span>
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="col-span-1 flex justify-center self-center">
-                      <div
-                        className={`w-2 h-2 rounded-full ${
-                          result.type === "error"
-                            ? "bg-red-500"
-                            : "bg-green-500"
-                        }`}
-                      />
+                      <div className="col-span-2">
+                        <div className="text-sm notion-text-secondary">
+                          {successRate}%
+                        </div>
+                      </div>
                     </div>
                   </div>
+
+                  {/* Expanded Call Details */}
+                  {expandedFunctions.has(functionEntry.functionName) && (
+                    <div
+                      style={{
+                        background: "var(--code-bg)",
+                        borderLeft: "3px solid var(--border-color)",
+                        marginLeft: "16px",
+                      }}
+                    >
+                      {/* Call Details Header */}
+                      <div
+                        className="px-4 py-2"
+                        style={{
+                          background: "var(--hover-bg)",
+                          borderBottom: "1px solid var(--border-color)",
+                        }}
+                      >
+                        <div className="grid grid-cols-12 gap-4 items-center">
+                          <div className="col-span-2">
+                            <span className="text-xs font-medium notion-text-secondary uppercase tracking-wide">
+                              Time
+                            </span>
+                          </div>
+                          <div className="col-span-3">
+                            <span className="text-xs font-medium notion-text-secondary uppercase tracking-wide">
+                              Arguments
+                            </span>
+                          </div>
+                          <div className="col-span-6">
+                            <span className="text-xs font-medium notion-text-secondary uppercase tracking-wide">
+                              Result
+                            </span>
+                          </div>
+                          <div className="col-span-1">
+                            <span className="text-xs font-medium notion-text-secondary uppercase tracking-wide">
+                              Status
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {functionEntry.calls
+                        .sort((a, b) => b.date.getTime() - a.date.getTime())
+                        .map((call) => {
+                          const result = formatResult(call);
+                          return (
+                            <div
+                              key={call.id}
+                              className="px-4 py-2"
+                              style={{
+                                borderBottom: "1px solid var(--border-color)",
+                              }}
+                            >
+                              <div className="grid grid-cols-12 gap-4 items-start">
+                                <div className="col-span-2">
+                                  <div className="text-xs notion-text-secondary">
+                                    {format(call.date, "MMM d")}
+                                  </div>
+                                  <div className="text-xs notion-text-secondary">
+                                    {format(call.date, "h:mm:ss a")}
+                                  </div>
+                                </div>
+
+                                <div className="col-span-3">
+                                  <div
+                                    className="text-xs font-mono notion-text"
+                                    style={{
+                                      background: "var(--background)",
+                                      padding: "2px 4px",
+                                      borderRadius: "2px",
+                                    }}
+                                  >
+                                    {JSON.stringify(call.args)}
+                                  </div>
+                                </div>
+
+                                <div className="col-span-6">
+                                  <div
+                                    className="text-xs font-mono max-h-16 overflow-y-auto"
+                                    style={{
+                                      background:
+                                        result.type === "error"
+                                          ? "var(--error-bg)"
+                                          : "var(--background)",
+                                      padding: "2px 4px",
+                                      borderRadius: "2px",
+                                      color:
+                                        result.type === "error"
+                                          ? "var(--error-text)"
+                                          : "var(--foreground)",
+                                    }}
+                                  >
+                                    <pre className="whitespace-pre-wrap">
+                                      {result.text}
+                                    </pre>
+                                  </div>
+                                </div>
+
+                                <div className="col-span-1 flex justify-center self-center">
+                                  <div
+                                    className={`w-2 h-2 rounded-full ${
+                                      result.type === "error"
+                                        ? "bg-red-500"
+                                        : "bg-green-500"
+                                    }`}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  )}
                 </div>
               );
             })}

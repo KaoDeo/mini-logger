@@ -1,11 +1,17 @@
-export type HistoryEntry = {
+export type CallEntry = {
   id: string;
   count: number;
-  functionName: string;
   args: unknown[];
   result: unknown;
   date: Date;
   error: string | null;
+};
+
+export type HistoryEntry = {
+  errors: number;
+  successful: number;
+  functionName: string;
+  calls: CallEntry[];
 };
 
 function createHistoryStore() {
@@ -19,8 +25,28 @@ function createHistoryStore() {
   return {
     get: () => [...history],
 
-    add: (entry: HistoryEntry) => {
-      history.push(entry);
+    add: (callEntry: CallEntry, functionName: string) => {
+      const existingFunction = history.find(
+        (h) => h.functionName === functionName
+      );
+
+      if (existingFunction) {
+        existingFunction.calls.push(callEntry);
+        if (callEntry.error) {
+          existingFunction.errors++;
+        } else {
+          existingFunction.successful++;
+        }
+      } else {
+        const newHistoryEntry: HistoryEntry = {
+          functionName,
+          errors: callEntry.error ? 1 : 0,
+          successful: callEntry.error ? 0 : 1,
+          calls: [callEntry],
+        };
+        history.push(newHistoryEntry);
+      }
+
       notifyListeners();
     },
 

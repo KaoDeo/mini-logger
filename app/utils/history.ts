@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
-import { historyStore, type HistoryEntry } from "./history-store";
+import { historyStore, type CallEntry } from "./history-store";
 
 export function storeHistory<T extends unknown[], R>(
   callback: (...args: T) => R
@@ -14,17 +14,16 @@ export function storeHistory<T extends unknown[], R>(
     try {
       const result = callback(...args);
 
-      const entry: HistoryEntry = {
+      const callEntry: CallEntry = {
         id,
         count,
-        functionName,
         args,
         result,
         date,
         error: null,
       };
 
-      historyStore.add(entry);
+      historyStore.add(callEntry, functionName);
       count++;
 
       return result;
@@ -32,17 +31,16 @@ export function storeHistory<T extends unknown[], R>(
       const errorMessage =
         error instanceof Error ? error.message : String(error);
 
-      const entry: HistoryEntry = {
+      const callEntry: CallEntry = {
         id,
         count,
-        functionName,
         args,
         result: null,
         date,
         error: errorMessage,
       };
 
-      historyStore.add(entry);
+      historyStore.add(callEntry, functionName);
       count++;
 
       return undefined;

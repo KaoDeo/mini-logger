@@ -9,7 +9,6 @@ import {
   fibonacci,
   isPrime,
   multiply,
-  storeHistory,
   validateEmail,
 } from "@/app/utils";
 import { useEffect } from "react";
@@ -20,19 +19,24 @@ export default function Home() {
     add(4, 3);
     add(3, 3);
 
+    daysBetween("2024-01-01", "2024-01-02");
+    daysBetween("2024-01-01", "");
+
     multiply(2, 7);
     multiply(3, 7);
     multiply(4, 7);
 
     divide(10, 0);
-    divide(9, 0);
+    divide(9, 1);
     divide(8, 0);
 
-    // fibonacci(5);
-    // validateEmail("test@example.com");
-    // isPrime(17);
-    // calculateDistance({ x: 1, y: 2 }, { x: 3, y: 4 });
-    // daysBetween("2024-01-01", "2024-01-02");
+    fibonacci(5);
+    validateEmail("test@example.com");
+    validateEmail("testexample.com");
+
+    isPrime(17);
+    calculateDistance({ x: 1, y: 2 }, { x: 3, y: 4 });
+    calculateDistance({ x: 1, y: 2 }, { x: 3, y: 4 });
   }, []);
 
   return (
