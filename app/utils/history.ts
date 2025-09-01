@@ -6,9 +6,10 @@ import {
 } from "./history-store";
 
 export function storeHistory<T extends unknown[], R>(
-  callback: (...args: T) => R
+  callback: (...args: T) => R,
+  explicitName?: string
 ) {
-  const functionName = callback.name || "anonymous";
+  const functionName = explicitName || callback.name || "anonymous";
   let count = 0;
 
   const functionHistory: FunctionHistory = {
